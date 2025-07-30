@@ -4,3 +4,4 @@ package-lock.json
 /.idea
 package-lock.json
 .idea/modules.xml
+/server/node_modules
