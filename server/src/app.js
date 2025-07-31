@@ -5,6 +5,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config();
+const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -16,7 +17,12 @@ app.use(express.static('public'));
 // Database connection
 const sequelize = new Sequelize(process.env.DATABASE_URL || 'postgres://postgres:password@localhost:5432/memory_tester', {
   dialect: 'postgres',
-  logging: false
+  logging: false,
+  schema: 'public',
+  define: {
+    schema: 'public'
+  }
+
 });
 
 // Models
@@ -47,7 +53,8 @@ const User = sequelize.define('User', {
 const Test = sequelize.define('Test', {
   contentType: {
     type: DataTypes.ENUM('picture', 'video'),
-    allowNull: false
+    allowNull: false,
+    field: 'contentType'
   },
   content: {
     type: DataTypes.JSONB,
@@ -71,7 +78,12 @@ Test.belongsTo(User);
 app.post('/api/register', async (req, res) => {
   try {
     const { username, password, email } = req.body;
-    const user = await User.create({ username, password, email });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      username,
+      password: hashedPassword,
+      email
+    });
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -108,6 +120,81 @@ schedule.scheduleJob('0 0 * * *', async () => {
   });
   // Implementation for notifications
 });
+
+// Add this route to your app.js
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    // Find user
+    const user = await User.findOne({ where: { username } });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Generate token
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Send response
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        points: user.points
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/users/:id/profile', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id, {
+      include: [{
+        model: Test,
+        required: false,
+        limit: 5,
+        order: [['createdAt', 'DESC']]
+      }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const profile = {
+      username: user.username,
+      email: user.email,
+      points: user.points,
+      testsCompleted: user.Tests ? user.Tests.length : 0,
+      recentTests: user.Tests ? user.Tests.map(test => ({
+        id: test.id,
+        date: test.createdAt,
+        contentType: test.contentType
+      })) : []
+    };
+
+    res.json(profile);
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // Database sync
 sequelize.sync({ alter: true })

@@ -15,6 +15,8 @@ const Login = () => {
       navigate('/');
     } catch (error) {
       console.error('Login failed:', error);
+      // Add some user feedback here, for example:
+      alert(error.response?.data?.error || 'Login failed. Please try again.');
     }
   };
 
