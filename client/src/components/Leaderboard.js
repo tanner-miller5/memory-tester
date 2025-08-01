@@ -34,7 +34,7 @@ const Leaderboard = () => {
         </TableHead>
         <TableBody>
           {leaderboard?.map((user, index) => (
-            <TableRow key={user._id}>
+            <TableRow key={user.id}>
               <TableCell>{index + 1}</TableCell>
               <TableCell>{user.username}</TableCell>
               <TableCell>{user.points}</TableCell>

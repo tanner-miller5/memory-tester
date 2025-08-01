@@ -195,6 +195,35 @@ app.get('/api/users/:id/profile', async (req, res) => {
   }
 });
 
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: [
+          'id',
+        'username',
+        'points',
+        [sequelize.literal('(SELECT COUNT(*) FROM "Tests" WHERE "Tests"."UserId" = "User"."id")'), 'testsCompleted']
+      ],
+      order: [['points', 'DESC']],
+      limit: 100
+    });
+
+    const leaderboardData = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      totalScore: user.points,
+      testsCompleted: parseInt(user.getDataValue('testsCompleted'), 10) || 0,
+      averageTime: 0 // You can add this calculation if you store completion times in your Tests table
+    }));
+
+    res.json(leaderboardData);
+  } catch (error) {
+    console.error('Leaderboard error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 
 // Database sync
 sequelize.sync({ alter: true })
