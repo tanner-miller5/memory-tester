@@ -4,8 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Layout = ({ children }) => {
-  const { user, logout } = useAuth();
-
+  const { user, isAdmin, logout } = useAuth();
   return (
     <>
       <AppBar position="static">
@@ -13,17 +12,22 @@ const Layout = ({ children }) => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Memory Tester
           </Typography>
+            {user?.isAdmin &&
+                <Button color="inherit" component={RouterLink} to="/create-test">
+                    Create Test
+                </Button>
+            }
           {user ? (
             <>
               <Button color="inherit" component={RouterLink} to="/">
                 Home
               </Button>
-              <Button color="inherit" component={RouterLink} to="/create-test">
-                Create Test
-              </Button>
               <Button color="inherit" component={RouterLink} to="/leaderboard">
                 Leaderboard
               </Button>
+                <Button color="inherit" component={RouterLink} to="/upcoming-tests">
+                    Upcoming Tests
+                </Button>
               <Button color="inherit" component={RouterLink} to="/profile">
                 Profile
               </Button>

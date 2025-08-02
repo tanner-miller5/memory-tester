@@ -18,6 +18,8 @@ import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
+import UpcomingTests from './components/UpcomingTests';
+
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -76,6 +78,8 @@ function App() {
                   }
                 />
                 <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/upcoming-tests" element={<UpcomingTests />} />
+
               </Routes>
             </Layout>
           </BrowserRouter>

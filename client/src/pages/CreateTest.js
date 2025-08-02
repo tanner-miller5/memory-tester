@@ -1,30 +1,53 @@
-import React, { useState } from 'react';
-import { Box, Button, Container, Typography, TextField, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import { Box, Button, Container, Typography, RadioGroup, FormControlLabel, Radio } from '@mui/material';
 import { useMutation } from 'react-query';
 import axios from 'axios';
+import {useNavigate} from "react-router-dom";
+import {useAuth} from "../context/AuthContext";
 
 function CreateTest() {
   const [contentType, setContentType] = useState('picture');
   const [files, setFiles] = useState([]);
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
-  const createTest = useMutation((testData) => {
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('content', file);
-    });
-    formData.append('contentType', contentType);
-    
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate('/');
+    }
+  }, [isAdmin, navigate]);
+
+
+  const createTest = useMutation((formData
+  ) => {
     return axios.post('http://localhost:3001/api/test/create', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
     });
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createTest.mutate();
+    if (files.length === 0) {
+      alert('Please select at least one file');
+      return;
+    }
+
+    const formData = new FormData();
+    // Add files
+    files.forEach(file => {
+      formData.append('content', file);
+    });
+
+    // Add content type
+    formData.append('contentType', contentType);
+
+    createTest.mutate(formData);
   };
+
+
+
 
   return (
     <Container maxWidth="sm">
@@ -55,13 +78,20 @@ function CreateTest() {
               onChange={(e) => setFiles(Array.from(e.target.files))}
             />
           </Button>
-          
+
+          {files.length > 0 && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                {files.length} file(s) selected
+              </Typography>
+          )}
+
           <Button
             type="submit"
             variant="contained"
             color="primary"
             fullWidth
             sx={{ mt: 3 }}
+            disabled={files.length === 0}
           >
             Create Test
           </Button>

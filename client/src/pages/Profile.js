@@ -36,6 +36,8 @@ const Profile = () => {
             <Typography>Username: {profile.username}</Typography>
             <Typography>Total Points: {profile.points}</Typography>
             <Typography>Tests Completed: {profile.testsCompleted}</Typography>
+              <Typography>Member Since: {new Date(profile.createdAt).toLocaleDateString()}</Typography>
+              <Typography>Last Updated: {new Date(profile.updatedAt).toLocaleDateString()}</Typography>
           </Card>
         </Grid>
         <Grid item xs={12} md={8}>

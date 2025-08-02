@@ -1,6 +1,6 @@
 const schedule = require('node-schedule');
-const Test = require('../models/test');
-const User = require('../models/user');
+const { User, Test } = require('../models');
+
 
 const Notifications = {
   scheduleTestNotifications: async (test) => {

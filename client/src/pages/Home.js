@@ -18,17 +18,17 @@ const Home = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Create New Test
+                Upcoming Tests
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Create a new memory test with pictures or videos
+                Upcoming memory test with pictures or videos
               </Typography>
               <Button
                 variant="contained"
                 color="primary"
-                onClick={() => navigate('/create-test')}
+                onClick={() => navigate('/upcoming-tests')}
               >
-                Create Test
+                Upcoming Tests
               </Button>
             </CardContent>
           </Card>
