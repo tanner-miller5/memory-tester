@@ -7,9 +7,7 @@ import {
   CircularProgress,
   Grid,
   Chip,
-  Fab
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import { useQuery } from 'react-query';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -119,21 +117,6 @@ const UpcomingTests = () => {
       <Typography variant="h4" gutterBottom>
         Upcoming Tests
       </Typography>
-
-      {isAdmin && (
-          <Fab
-              color="primary"
-              aria-label="create test"
-              onClick={() => navigate('/create-test')}
-              sx={{
-                position: 'fixed',
-                bottom: 32,
-                right: 32,
-              }}
-          >
-            <AddIcon />
-          </Fab>
-      )}
 
       <Grid container spacing={3}>
         {testArray?.map((test) => (

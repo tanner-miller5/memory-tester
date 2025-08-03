@@ -89,17 +89,13 @@ const Image = sequelize.define('Image', {
         type: DataTypes.STRING,
         allowNull: false
     },
-    path: {
-        type: DataTypes.STRING,
+    data: {
+        type: DataTypes.BLOB('long'),
         allowNull: false
     },
     contentType: {
         type: DataTypes.STRING,
         defaultValue: 'image/png'
-    },
-    isTest: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true
     },
     metadata: {
         type: DataTypes.JSONB,
@@ -108,11 +104,9 @@ const Image = sequelize.define('Image', {
 });
 
 Image.associate = (models) => {
-    Image.belongsTo(models.User, {
-        foreignKey: 'UserId',
-        as: 'creator'
-    });
+    Image.belongsTo(models.User);
 };
+
 
 
 User.hasMany(Test);
@@ -121,5 +115,6 @@ Test.belongsTo(User);
 module.exports = {
     sequelize,
     User,
-    Test
+    Test,
+    Image
 };

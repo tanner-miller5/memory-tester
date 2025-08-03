@@ -19,6 +19,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 import UpcomingTests from './components/UpcomingTests';
+import ManageTests from "./components/ManageTests";
 
 const theme = createTheme({
   palette: {
@@ -79,6 +80,14 @@ function App() {
                 />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/upcoming-tests" element={<UpcomingTests />} />
+                <Route
+                    path="/manage-tests"
+                    element={
+                      <PrivateRoute>
+                        <ManageTests />
+                      </PrivateRoute>
+                    }
+                />
 
               </Routes>
             </Layout>

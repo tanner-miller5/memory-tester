@@ -9,7 +9,11 @@ const TestInterface = ({ testId }) => {
   const [score, setScore] = useState(0);
 
   const { data: test } = useQuery(['test', testId], () =>
-    axios.get(`http://localhost:3001/api/test/${testId}`).then(res => res.data)
+    axios.get(`http://localhost:3001/api/test/${testId}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+  }).then(res => res.data)
   );
 
   const submitAnswer = useMutation((answer) => 

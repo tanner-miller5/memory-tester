@@ -13,10 +13,16 @@ const Layout = ({ children }) => {
             Memory Tester
           </Typography>
             {user?.isAdmin &&
-                <Button color="inherit" component={RouterLink} to="/create-test">
-                    Create Test
-                </Button>
-            }
+                <>
+                    <Button color="inherit" component={RouterLink} to="/create-test">
+                        Create Test
+                    </Button>
+                    <Button color="inherit" component={RouterLink} to="/manage-tests">
+                        Manage Tests
+                    </Button>
+                </>
+          }
+
           {user ? (
             <>
               <Button color="inherit" component={RouterLink} to="/">
