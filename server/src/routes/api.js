@@ -67,6 +67,21 @@ router.post('/test/create', auth, adminAuth,
       return res.status(400).json({ error: 'Maximum 10 files allowed' });
     }
 
+    const userId = req.user.id;
+
+    // First, delete all previous tests for this user
+    await Test.destroy({
+      where: {
+        UserId: userId
+      }
+    });
+
+    // Also delete associated images if needed
+    await Image.destroy({
+      where: {
+        UserId: userId
+      }
+    });
 
     const contentType = req.body.contentType;
     if (!['picture', 'video'].includes(contentType)) {

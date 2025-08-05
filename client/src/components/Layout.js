@@ -17,41 +17,35 @@ const Layout = ({ children }) => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Memory Tester
           </Typography>
-            {user?.isAdmin &&
-                <>
-                    <Button color="inherit" component={RouterLink} to="/create-test">
-                        Create Test
-                    </Button>
-                    <Button color="inherit" component={RouterLink} to="/manage-tests">
-                        Manage Tests
-                    </Button>
-                    <Button color="inherit"
-                        component={RouterLink}
-                        to="/admin/distractors"
-                    >
-                        Manage Distractors
-                    </Button>
-
-                </>
-          }
-
           {user ? (
             <>
-              <Button color="inherit" component={RouterLink} to="/">
-                Home
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/leaderboard">
-                Leaderboard
-              </Button>
-                <Button color="inherit" component={RouterLink} to="/upcoming-tests">
-                    Upcoming Tests
+                <Button color="inherit" component={RouterLink} to="/">
+                    Home
                 </Button>
-              <Button color="inherit" component={RouterLink} to="/profile">
-                Profile
-              </Button>
-              <Button color="inherit" onClick={logoutButton}>
-                Logout
-              </Button>
+                <Button color="inherit" component={RouterLink} to="/leaderboard">
+                    Leaderboard
+                </Button>
+                <Button color="inherit" component={RouterLink} to="/upcoming-tests">
+                        Upcoming Tests
+                </Button>
+                <Button color="inherit" component={RouterLink} to="/profile">
+                    Profile
+                </Button>
+                <Button color="inherit" component={RouterLink} to="/create-test">
+                    Create Test
+                </Button>
+                <Button color="inherit" component={RouterLink} to="/manage-tests">
+                    Manage Tests
+                </Button>
+                <Button color="inherit"
+                        component={RouterLink}
+                        to="/admin/distractors"
+                >
+                    Manage Distractors
+                </Button>
+                <Button color="inherit" onClick={logoutButton}>
+                    Logout
+                </Button>
             </>
           ) : (
             <>
