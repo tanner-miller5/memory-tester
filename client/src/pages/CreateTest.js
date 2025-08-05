@@ -18,14 +18,24 @@ function CreateTest() {
   }, [isAdmin, navigate]);
 
 
-  const createTest = useMutation((formData
-  ) => {
+  const createTest =  useMutation(
+      (formData) => {
     return axios.post('http://localhost:3001/api/test/create', formData, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
     });
-  });
+  },
+      {
+        onSuccess: () => {
+          navigate('/upcoming-tests');
+        },
+        onError: (error) => {
+          console.error('Error creating test:', error);
+          alert('Failed to create test. Please try again.');
+        }
+      }
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();

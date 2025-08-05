@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import { 
   Box, 
   Card, 
@@ -14,21 +14,22 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
+// CountdownTimer component
 const CountdownTimer = ({ targetDate, onTimeReached }) => {
   const [timeLeft, setTimeLeft] = useState('');
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    let interval;
+
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
       const target = new Date(targetDate).getTime();
       const difference = target - now;
 
       if (difference <= 0) {
-        setTimeLeft('Ready');
-        setIsReady(true);
+        clearInterval(interval);
         onTimeReached();
-        return;
+        return 'Time to take the test!';
       }
 
       const days = Math.floor(difference / (1000 * 60 * 60 * 24));
@@ -36,25 +37,28 @@ const CountdownTimer = ({ targetDate, onTimeReached }) => {
       const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-      setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+      return `${days}d ${hours}h ${minutes}m ${seconds}s`;
     };
 
-    const timer = setInterval(calculateTimeLeft, 1000);
-    calculateTimeLeft();
+    // Initial calculation
+    setTimeLeft(calculateTimeLeft());
 
-    return () => clearInterval(timer);
-  }, [targetDate, onTimeReached]);
+    // Update every second
+    interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    // Cleanup
+    return () => clearInterval(interval);
+  }, [targetDate]); // Include dependencies
 
   return (
-    <Typography 
-      variant="body1" 
-      color={isReady ? "primary" : "text.secondary"}
-      fontWeight={isReady ? "bold" : "normal"}
-    >
-      {timeLeft}
-    </Typography>
+      <Typography variant="h6" component="div">
+        {timeLeft}
+      </Typography>
   );
 };
+
 
 const UpcomingTests = () => {
   const navigate = useNavigate();
@@ -73,15 +77,16 @@ const UpcomingTests = () => {
     }
   );
 
-  const handleTestAvailable = (testId) => {
+  const handleTestAvailable = useCallback((testId) => {
     setAvailableTests(prev => ({
       ...prev,
       [testId]: true
     }));
-  };
+  }, []); // Memoize the callback
+
 
   const handleStartTest = (testId) => {
-    navigate(`/test/${testId}`);
+    navigate(`/take-test/${testId}`);
   };
 
   if (isLoading) {
@@ -110,7 +115,7 @@ const UpcomingTests = () => {
     return 'default';
   };
 
-  const testArray = tests?.length > 0 ? tests[0].schedule : [];
+  const testObj = tests?.length > 0 ? tests[0] : {};
 
   return (
     <Box sx={{ p: 3, maxWidth: 1200, margin: '0 auto' }}>
@@ -119,12 +124,12 @@ const UpcomingTests = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        {testArray?.map((test) => (
-          <Grid item xs={12} md={6} key={test.id}>
+        {testObj?.schedule?.map((test, index, array) => (
+          <Grid item xs={12} md={6} key={index}>
             <Card sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <Typography variant="h6" gutterBottom>
-                  {test.contentType} Test
+                  {testObj?.content[0]?.contentType} Test
                 </Typography>
                 
                 <Chip 
@@ -139,7 +144,7 @@ const UpcomingTests = () => {
                   </Typography>
                   <CountdownTimer 
                     targetDate={test.date}
-                    onTimeReached={() => handleTestAvailable(test.id)}
+                    onTimeReached={() => handleTestAvailable(testObj.id)}
                   />
                 </Box>
 
@@ -147,11 +152,12 @@ const UpcomingTests = () => {
                   variant="contained"
                   color="primary"
                   fullWidth
-                  disabled={!availableTests[test.id]}
-                  onClick={() => handleStartTest(test.id)}
+                  disabled={test.date > new Date().toISOString() || test?.completed}
+                  onClick={() => handleStartTest(testObj.id)}
                   sx={{ mt: 2 }}
                 >
-                  {availableTests[test.id] ? 'Take Test' : 'Test Not Available Yet'}
+                  {test.date < new Date().toISOString() && !test?.completed ? 'Take Test' : test?.completed ?
+                      `Test Completed ${test?.answer?.correct ? 1 : 0}/1` : 'Test Not Available Yet'}
                 </Button>
               </Box>
             </Card>

@@ -76,7 +76,7 @@ function TakeTest() {
     };
 
     // Add this function to load images with authentication
-    const loadAuthenticatedImage = async (imageId) => {
+    const loadAuthenticatedImage = async (imageId, contentType) => {
         try {
             const response = await axios.get(
                 `http://localhost:3001/api/images/${imageId}`,
@@ -87,7 +87,12 @@ function TakeTest() {
                     responseType: 'blob'
                 }
             );
-            return URL.createObjectURL(response.data);
+            const contentType = response.headers['content-type'];
+            const blob = new Blob([response.data], { type: contentType });
+            return {
+                url: URL.createObjectURL(blob),
+                contentType: contentType
+            };
         } catch (error) {
             console.error('Error loading image:', error);
             return null;
@@ -97,26 +102,29 @@ function TakeTest() {
     // Add state for image URLs
     const [imageUrls, setImageUrls] = useState({});
 
-    // Load images when options change
+    // Update the useEffect to store both URL and contentType
     useEffect(() => {
         if (questionData?.options) {
-            const loadImages = async () => {
-                const urls = {};
+            const loadMedia = async () => {
+                const mediaData = {};
                 for (const option of questionData.options) {
-                    urls[option.imageId] = await loadAuthenticatedImage(option.imageId);
+                    const result = await loadAuthenticatedImage(option.imageId);
+                    if (result) {
+                        mediaData[option.imageId] = result;
+                    }
                 }
-                setImageUrls(urls);
+                setImageUrls(mediaData);
             };
-            loadImages();
+            loadMedia();
         }
 
-        // Cleanup function to revoke object URLs
         return () => {
-            Object.values(imageUrls).forEach(url => {
-                if (url) URL.revokeObjectURL(url);
+            Object.values(imageUrls).forEach(media => {
+                if (media?.url) URL.revokeObjectURL(media.url);
             });
         };
     }, [questionData?.options]);
+
 
 
 
@@ -154,6 +162,13 @@ function TakeTest() {
             </Container>
         );
     }
+
+    // First, add a function to check content type
+    const isVideo = (contentType) => {
+        // Check if the blob URL contains video mime type
+        return contentType && contentType.startsWith('video/');
+    };
+
 
     return (
         <Container maxWidth="lg">
@@ -196,12 +211,21 @@ function TakeTest() {
                                     disabled={!!feedback}
                                 >
                                     <CardMedia
-                                        component="img"
-                                        src={imageUrls[option.imageId]}
+                                        component={isVideo(imageUrls[option.imageId]?.contentType) ? "video" : "img"}
+                                        src={imageUrls[option.imageId]?.url}
                                         alt={`Option ${index + 1}`}
+                                        controls={isVideo(imageUrls[option.imageId]?.contentType)}
+                                        onError={(e) => {
+                                            console.error('Media loading error:', {
+                                                error: e.target.error,
+                                                src: e.target.src,
+                                                contentType: imageUrls[option.imageId]?.contentType
+                                            });
+                                        }}
                                         sx={{
                                             height: 300,
-                                            objectFit: 'cover'
+                                            objectFit: 'contain',
+                                            backgroundColor: 'black'
                                         }}
                                     />
                                 </CardActionArea>
@@ -212,15 +236,6 @@ function TakeTest() {
 
                 {feedback && (
                     <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                        {feedback.nextSchedule ? (
-                            <Button
-                                variant="contained"
-                                onClick={handleNextTest}
-                                size="large"
-                            >
-                                Next Test
-                            </Button>
-                        ) : (
                             <Button
                                 variant="contained"
                                 onClick={handleViewResults}
@@ -229,7 +244,6 @@ function TakeTest() {
                             >
                                 View Final Results
                             </Button>
-                        )}
                     </Box>
                 )}
             </Box>

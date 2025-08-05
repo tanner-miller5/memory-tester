@@ -107,6 +107,7 @@ router.post('/test/create', auth, adminAuth,
     // Calculate test schedule based on current time
     const now = new Date();
     const schedule = [
+      { date: new Date(now.getTime() + 60 * 1000), completed: false },    // 1 minute
       { date: new Date(now.getTime() + 24 * 60 * 60 * 1000), completed: false },    // 24 hours
       { date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), completed: false }, // 1 week
       { date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), completed: false }, // 2 weeks
@@ -293,7 +294,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Update delete endpoint to clean up images
 router.delete('/test/:id', auth, adminAuth, async (req, res) => {
   try {
     const test = await Test.findByPk(req.params.id);
@@ -301,19 +301,8 @@ router.delete('/test/:id', auth, adminAuth, async (req, res) => {
       return res.status(404).json({ error: 'Test not found' });
     }
 
-    // Delete associated images from database and filesystem
+    // Get all image IDs associated with this test
     const imageIds = test.content.map(item => item.imageId);
-    const images = await Image.findAll({
-      where: {
-        id: imageIds
-      }
-    });
-
-    // Delete files from filesystem
-    await Promise.all(images.map(image =>
-        fs.unlink(path.join(__dirname, '../../public', image.path))
-            .catch(err => console.error(`Error deleting file for image ${image.id}:`, err))
-    ));
 
     // Delete image records from database
     await Image.destroy({
@@ -333,6 +322,7 @@ router.delete('/test/:id', auth, adminAuth, async (req, res) => {
 });
 
 
+
 // Get all tests (admin only)
 router.get('/tests/all', auth, adminAuth, async (req, res) => {
   try {
@@ -346,7 +336,7 @@ router.get('/tests/all', auth, adminAuth, async (req, res) => {
   }
 });
 
-// Get question with options
+// Update the test question endpoint to use distractor images when available
 router.get('/test/:id/question', auth, async (req, res) => {
   try {
     const test = await Test.findByPk(req.params.id);
@@ -354,26 +344,42 @@ router.get('/test/:id/question', auth, async (req, res) => {
       return res.status(404).json({ error: 'Test not found' });
     }
 
-    // Get the current schedule that's not completed
     const currentSchedule = test.schedule.find(s => !s.completed);
     if (!currentSchedule) {
       return res.status(400).json({ error: 'Test already completed' });
     }
 
-    // Get the correct image
     const correctImage = test.content[0];
 
-    // Get 3 random images for distractors
-    const distractors = await Image.findAll({
+    // First try to get distractor images
+    let distractors = await Image.findAll({
       where: {
         id: { [Sequelize.Op.ne]: correctImage.imageId },
-        contentType: { [Sequelize.Op.startsWith]: test.contentType === 'picture' ? 'image/' : 'video/' }
+        contentType: { [Sequelize.Op.startsWith]: test.contentType === 'picture' ? 'image/' : 'video/' },
+        metadata: {
+          isDistractor: true
+        }
       },
       order: Sequelize.literal('RANDOM()'),
       limit: 3
     });
 
-    // Combine correct answer with distractors and shuffle
+    // If not enough distractors, fall back to regular images
+    if (distractors.length < 3) {
+      const additionalDistractors = await Image.findAll({
+        where: {
+          id: { [Sequelize.Op.ne]: correctImage.imageId },
+          contentType: { [Sequelize.Op.startsWith]: test.contentType === 'picture' ? 'image/' : 'video/' },
+          metadata: {
+            isDistractor: { [Sequelize.Op.or]: [false, null] }
+          }
+        },
+        order: Sequelize.literal('RANDOM()'),
+        limit: 3 - distractors.length
+      });
+      distractors = [...distractors, ...additionalDistractors];
+    }
+
     const options = [
       { imageId: correctImage.imageId },
       ...distractors.map(d => ({ imageId: d.id }))
@@ -391,6 +397,7 @@ router.get('/test/:id/question', auth, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch question' });
   }
 });
+
 
 // Submit answer
 router.post('/test/:id/answer', auth, async (req, res) => {
@@ -411,7 +418,8 @@ router.post('/test/:id/answer', auth, async (req, res) => {
 
     // Update the schedule with the answer
     const scheduleIndex = test.schedule.indexOf(currentSchedule);
-    test.schedule[scheduleIndex] = {
+    const updatedSchedule = [...test.schedule];  // Create a new array
+    updatedSchedule[scheduleIndex] = {
       ...currentSchedule,
       completed: true,
       answer: {
@@ -420,6 +428,16 @@ router.post('/test/:id/answer', auth, async (req, res) => {
         selectedAnswer
       }
     };
+
+    // Update the test in the database using Sequelize
+    await test.update({
+      schedule: updatedSchedule
+    }, {
+      where: { id: test.id }
+    });
+
+    // Reload the test to ensure we have the latest data
+    await test.reload();
 
     // Award points if correct
     if (correct) {
@@ -482,6 +500,129 @@ router.get('/test/:id/results', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching results:', error);
     res.status(500).json({ error: 'Failed to fetch test results' });
+  }
+});
+
+// Add distractor images (admin only)
+router.post('/distractors/add', auth, adminAuth, upload.array('distractors', 10), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    if (req.files.length > 10) {
+      return res.status(400).json({ error: 'Maximum 10 files allowed' });
+    }
+
+    const contentType = req.body.contentType;
+    if (!['picture', 'video'].includes(contentType)) {
+      return res.status(400).json({ error: 'Invalid content type. Must be either "picture" or "video"' });
+    }
+
+    // Validate file types
+    const invalidFile = req.files.find(file => {
+      if (contentType === 'picture' && !file.mimetype.startsWith('image/')) {
+        return true;
+      }
+      if (contentType === 'video' && !file.mimetype.startsWith('video/')) {
+        return true;
+      }
+      return false;
+    });
+
+    if (invalidFile) {
+      return res.status(400).json({
+        error: `Invalid file type for ${invalidFile.originalname}. Must be ${contentType} file.`
+      });
+    }
+
+    // Save images to database with isDistractor flag
+    const distractors = await Promise.all(req.files.map(async (file) => {
+      return await Image.create({
+        filename: file.originalname,
+        data: file.buffer,
+        contentType: file.mimetype,
+        UserId: req.user.userId,
+        metadata: {
+          size: file.size,
+          originalName: file.originalname,
+          isDistractor: true, // Mark as distractor image
+          category: req.body.category || 'general' // Optional categorization
+        }
+      });
+    }));
+
+    res.status(201).json({
+      message: 'Distractor images added successfully',
+      count: distractors.length,
+      distractors: distractors.map(d => ({
+        id: d.id,
+        filename: d.filename,
+        contentType: d.contentType,
+        category: d.metadata.category
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error adding distractor images:', error);
+    res.status(500).json({
+      error: 'Failed to add distractor images. Please try again.'
+    });
+  }
+});
+
+// Get all distractor images (admin only)
+router.get('/distractors', auth, adminAuth, async (req, res) => {
+  try {
+    const distractors = await Image.findAll({
+      where: {
+        metadata: {
+          isDistractor: true
+        }
+      },
+      attributes: ['id', 'filename', 'contentType', 'metadata', 'createdAt'],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      count: distractors.length,
+      distractors: distractors.map(d => ({
+        id: d.id,
+        filename: d.filename,
+        contentType: d.contentType,
+        category: d.metadata.category,
+        createdAt: d.createdAt
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fetching distractor images:', error);
+    res.status(500).json({ error: 'Failed to fetch distractor images' });
+  }
+});
+
+// Delete distractor image (admin only)
+router.delete('/distractors/:id', auth, adminAuth, async (req, res) => {
+  try {
+    const image = await Image.findOne({
+      where: {
+        id: req.params.id,
+        metadata: {
+          isDistractor: true
+        }
+      }
+    });
+
+    if (!image) {
+      return res.status(404).json({ error: 'Distractor image not found' });
+    }
+
+    await image.destroy();
+    res.json({ message: 'Distractor image deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting distractor image:', error);
+    res.status(500).json({ error: 'Failed to delete distractor image' });
   }
 });
 

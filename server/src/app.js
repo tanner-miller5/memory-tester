@@ -5,7 +5,7 @@ const schedule = require('node-schedule');
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const apiRouter = require('./routes/api'); // adjust path as needed
-const { sequelize } = require('./models')
+const { sequelize, Test } = require('./models')
 
 
 const app = express();

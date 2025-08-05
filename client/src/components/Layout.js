@@ -1,10 +1,15 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import {Link as RouterLink, useNavigate} from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Layout = ({ children }) => {
   const { user, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
+  const logoutButton = () => {
+      logout();
+      navigate('/');
+  }
   return (
     <>
       <AppBar position="static">
@@ -20,6 +25,13 @@ const Layout = ({ children }) => {
                     <Button color="inherit" component={RouterLink} to="/manage-tests">
                         Manage Tests
                     </Button>
+                    <Button color="inherit"
+                        component={RouterLink}
+                        to="/admin/distractors"
+                    >
+                        Manage Distractors
+                    </Button>
+
                 </>
           }
 
@@ -37,7 +49,7 @@ const Layout = ({ children }) => {
               <Button color="inherit" component={RouterLink} to="/profile">
                 Profile
               </Button>
-              <Button color="inherit" onClick={logout}>
+              <Button color="inherit" onClick={logoutButton}>
                 Logout
               </Button>
             </>
