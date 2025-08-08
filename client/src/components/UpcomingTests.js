@@ -85,8 +85,8 @@ const UpcomingTests = () => {
   }, []); // Memoize the callback
 
 
-  const handleStartTest = (testId) => {
-    navigate(`/take-test/${testId}`);
+  const handleStartTest = (testId, scheduleId) => {
+    navigate(`/take-test/${testId}/${scheduleId}`);
   };
 
   if (isLoading) {
@@ -124,17 +124,17 @@ const UpcomingTests = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        {testObj?.schedule?.map((test, index, array) => (
+        {testObj?.schedule?.map((scheduleObj, index, array) => (
           <Grid item xs={12} md={6} key={index}>
             <Card sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <Typography variant="h6" gutterBottom>
-                  {testObj?.content[0]?.contentType} Test
+                  {testObj?.contentType} Test
                 </Typography>
                 
                 <Chip 
-                  label={formatDistanceToNow(new Date(test.date), { addSuffix: true })}
-                  color={getStatusColor(test.date)}
+                  label={formatDistanceToNow(new Date(scheduleObj.date), { addSuffix: true })}
+                  color={getStatusColor(scheduleObj.date)}
                   sx={{ alignSelf: 'flex-start', mb: 2 }}
                 />
 
@@ -143,7 +143,7 @@ const UpcomingTests = () => {
                     Time until test:
                   </Typography>
                   <CountdownTimer 
-                    targetDate={test.date}
+                    targetDate={scheduleObj.date}
                     onTimeReached={() => handleTestAvailable(testObj.id)}
                   />
                 </Box>
@@ -152,12 +152,12 @@ const UpcomingTests = () => {
                   variant="contained"
                   color="primary"
                   fullWidth
-                  disabled={test.date > new Date().toISOString() || test?.completed}
-                  onClick={() => handleStartTest(testObj.id)}
+                  disabled={scheduleObj.date > new Date().toISOString() || scheduleObj?.completed}
+                  onClick={() => handleStartTest(testObj.id, scheduleObj.id)}
                   sx={{ mt: 2 }}
                 >
-                  {test.date < new Date().toISOString() && !test?.completed ? 'Take Test' : test?.completed ?
-                      `Test Completed ${test?.answer?.correct ? 1 : 0}/1` : 'Test Not Available Yet'}
+                  {scheduleObj.date < new Date().toISOString() && !scheduleObj?.completed ? 'Take Test' : scheduleObj?.completed ?
+                      `Test Completed ${scheduleObj?.answer?.correct ? 1 : 0}/1` : 'Test Not Available Yet'}
                 </Button>
               </Box>
             </Card>

@@ -94,19 +94,6 @@ const ManageTests = () => {
                 Created: {new Date(test.createdAt).toLocaleDateString()}
               </Typography>
 
-              <Box sx={{ mt: 2 }}>
-                <Chip
-                  label={`${test.content.length} items`}
-                  size="small"
-                  sx={{ mr: 1 }}
-                />
-                <Chip
-                  label={test.contentType}
-                  size="small"
-                  color="primary"
-                />
-              </Box>
-
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
                 <Button
                   variant="outlined"

@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Button, Grid, Card, CardContent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Instructions from "../components/Instructions";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -12,7 +13,11 @@ const Home = () => {
       <Typography variant="h4" gutterBottom>
         Welcome to Memory Tester, {user?.username}!
       </Typography>
-      
+      <Box sx={{ mt: 4 }}>
+        <Instructions />
+      </Box>
+
+
       <Grid container spacing={3} sx={{ mt: 2 }}>
         <Grid item xs={12} md={4}>
           <Card>
@@ -21,7 +26,7 @@ const Home = () => {
                 Upcoming Tests
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Upcoming memory test with pictures or videos
+                Upcoming memory test Schedule
               </Typography>
               <Button
                 variant="contained"
@@ -38,17 +43,17 @@ const Home = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                View Leaderboard
+                View Create Test
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                See how you rank against other users
+                Create a new long term memory test
               </Typography>
               <Button
                 variant="contained"
                 color="secondary"
-                onClick={() => navigate('/leaderboard')}
+                onClick={() => navigate('/create-test')}
               >
-                View Leaderboard
+                Create Test
               </Button>
             </CardContent>
           </Card>
@@ -58,17 +63,17 @@ const Home = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Your Profile
+                Your existing tests
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                View your progress and test history
+                View your existing long term memory tests
               </Typography>
               <Button
                 variant="contained"
                 color="primary"
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate('/manage-tests')}
               >
-                View Profile
+                Manage Tests
               </Button>
             </CardContent>
           </Card>

@@ -69,10 +69,6 @@ const Test = sequelize.define('Test', {
         allowNull: false,
         field: 'contentType'
     },
-    content: {
-        type: DataTypes.JSONB,
-        allowNull: false
-    },
     schedule: {
         type: DataTypes.JSONB,
         allowNull: false
@@ -84,6 +80,10 @@ const Image = sequelize.define('Image', {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
+    },
+    UserId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     },
     filename: {
         type: DataTypes.STRING,

@@ -20,7 +20,6 @@ import Register from './pages/Register';
 
 import UpcomingTests from './components/UpcomingTests';
 import ManageTests from "./components/ManageTests";
-import AdminDistractorImages from "./components/AdminDistractorImages";
 
 const theme = createTheme({
   palette: {
@@ -64,7 +63,7 @@ function App() {
                   }
                 />
                 <Route
-                  path="/take-test/:testId"
+                  path="/take-test/:testId/:scheduleId"
                   element={
                     <PrivateRoute>
                       <TakeTest />
@@ -89,15 +88,6 @@ function App() {
                       </PrivateRoute>
                     }
                 />
-                  <Route
-                      path="/admin/distractors"
-                      element={
-                          <PrivateRoute>
-                              <AdminDistractorImages />
-                          </PrivateRoute>
-                      }
-                  />
-
               </Routes>
             </Layout>
           </BrowserRouter>

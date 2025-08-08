@@ -25,23 +25,8 @@ const Layout = ({ children }) => {
                 <Button color="inherit" component={RouterLink} to="/leaderboard">
                     Leaderboard
                 </Button>
-                <Button color="inherit" component={RouterLink} to="/upcoming-tests">
-                        Upcoming Tests
-                </Button>
                 <Button color="inherit" component={RouterLink} to="/profile">
                     Profile
-                </Button>
-                <Button color="inherit" component={RouterLink} to="/create-test">
-                    Create Test
-                </Button>
-                <Button color="inherit" component={RouterLink} to="/manage-tests">
-                    Manage Tests
-                </Button>
-                <Button color="inherit"
-                        component={RouterLink}
-                        to="/admin/distractors"
-                >
-                    Manage Distractors
                 </Button>
                 <Button color="inherit" onClick={logoutButton}>
                     Logout

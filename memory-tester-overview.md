@@ -6,11 +6,9 @@ Memory Tester is a scientific application designed to assess and improve users' 
 ## Core Features
 
 ### Memory Test Creation
-- Users can initiate new memory tests using:
+- Users can initiate new memory tests by uploading personal:
   - Pictures (static images)
   - Videos (short clips)
-- Multiple difficulty levels available
-- Customizable test parameters
 
 ### Testing Schedule
 The app implements a scientifically-based spaced repetition system with tests scheduled at:
@@ -25,13 +23,13 @@ The app implements a scientifically-based spaced repetition system with tests sc
 
 ### Test Mechanics
 1. Initial Phase:
-   - Users are presented with a sequence of pictures/videos to memorize
-   - Each item is shown for a predetermined duration
+   - Users upload a sequence of personal pictures/videos to memorize when they were taken based on meta data.
+   - Each item is shown for a predetermined duration with the date and time the picture were taken based on meta data.
    - Users can set their preferred content type (pictures or videos)
 
 2. Testing Phase:
    - Users receive notifications at scheduled intervals
-   - During each test, users must identify previously viewed content
+   - During each test, users must identify when previously uploaded content was taken
    - Tests present multiple options with only one correct item from their original sequence
    - Immediate feedback on accuracy is provided
 

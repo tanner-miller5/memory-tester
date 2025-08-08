@@ -6,6 +6,9 @@ import {
     Box,
     Container,
     Typography,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
     Grid,
     Button,
     CircularProgress,
@@ -15,19 +18,22 @@ import {
     Alert
 } from '@mui/material';
 import { format } from 'date-fns';
+import generateFakeDates from '../utils/dateUtils';
 
 function TakeTest() {
-    const { testId } = useParams();
+    const { testId, scheduleId } = useParams();
     const navigate = useNavigate();
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [feedback, setFeedback] = useState(null);
+    const [dateOptions, setDateOptions] = useState([]);
+    const [imageUrls, setImageUrls] = useState({});
 
-    // Fetch test data and question
-    const { data: questionData, isLoading, error, refetch } = useQuery(
-        ['test-question', testId],
+    // Fetch test and current schedule data
+    const { data: testData, isLoading, error } = useQuery(
+        ['test', testId],
         async () => {
             const response = await axios.get(
-                `http://localhost:3001/api/test/${testId}/question`,
+                `http://localhost:3001/api/test/${testId}`,
                 {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 }
@@ -38,10 +44,10 @@ function TakeTest() {
 
     // Submit answer mutation
     const submitAnswer = useMutation(
-        async (selectedImageId) => {
+        async (answerData) => {
             const response = await axios.post(
-                `http://localhost:3001/api/test/${testId}/answer`,
-                { selectedAnswer: selectedImageId },
+                `http://localhost:3001/api/test/${testId}/schedule/${scheduleId}/answer`,
+                answerData,
                 {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 }
@@ -52,31 +58,14 @@ function TakeTest() {
             onSuccess: (data) => {
                 setFeedback({
                     correct: data.correct,
-                    message: data.correct ? 'Correct!' : 'Incorrect. Try to remember better next time.',
-                    nextSchedule: data.nextSchedule
+                    message: data.correct ? 'Correct!' : 'Incorrect. Try to remember better next time.'
                 });
             }
         }
     );
 
-    const handleAnswerSelect = async (selectedImageId) => {
-        if (submitAnswer.isLoading) return;
-        setSelectedAnswer(selectedImageId);
-        await submitAnswer.mutateAsync(selectedImageId);
-    };
-
-    const handleViewResults = () => {
-        navigate(`/test/${testId}/results`);
-    };
-
-    const handleNextTest = () => {
-        setSelectedAnswer(null);
-        setFeedback(null);
-        refetch();
-    };
-
-    // Add this function to load images with authentication
-    const loadAuthenticatedImage = async (imageId, contentType) => {
+    // Load images with authentication
+    const loadAuthenticatedImage = async (imageId) => {
         try {
             const response = await axios.get(
                 `http://localhost:3001/api/images/${imageId}`,
@@ -99,21 +88,18 @@ function TakeTest() {
         }
     };
 
-    // Add state for image URLs
-    const [imageUrls, setImageUrls] = useState({});
-
-    // Update the useEffect to store both URL and contentType
+    // Load media when testData is available
     useEffect(() => {
-        if (questionData?.options) {
+        if (testData?.schedule?.[scheduleId]?.imageId) {
             const loadMedia = async () => {
-                const mediaData = {};
-                for (const option of questionData.options) {
-                    const result = await loadAuthenticatedImage(option.imageId);
-                    if (result) {
-                        mediaData[option.imageId] = result;
-                    }
+                const imageId = testData?.schedule?.[scheduleId]?.imageId;
+                const result = await loadAuthenticatedImage(imageId);
+                if (result) {
+                    setImageUrls(prev => ({
+                        ...prev,
+                        [imageId]: result
+                    }));
                 }
-                setImageUrls(mediaData);
             };
             loadMedia();
         }
@@ -123,10 +109,68 @@ function TakeTest() {
                 if (media?.url) URL.revokeObjectURL(media.url);
             });
         };
-    }, [questionData?.options]);
+    }, [testData?.schedule]);
 
+    // Generate date options when testData is available
+    useEffect(() => {
+        console.log('testData:', testData); // Debug log
+        
+        if (testData?.schedule?.[scheduleId]?.creationDateTime) {
+            console.log('creationDateTime:', testData?.schedule?.[scheduleId]?.creationDateTime); // Debug log
+            
+            try {
+                // Generate date options including the real date and 3 fake dates
+                const realDate = new Date(testData?.schedule?.[scheduleId]?.creationDateTime);
+                console.log('realDate:', realDate); // Debug log
+                
+                // Check if date is valid
+                if (isNaN(realDate.getTime())) {
+                    console.error('Invalid date:', testData?.schedule?.[scheduleId]?.creationDateTime);
+                    return;
+                }
+                
+                const fakeOptions = generateFakeDates(realDate);
+                console.log('fakeOptions:', fakeOptions); // Debug log
 
+                // Combine real and fake dates, shuffle them
+                const allOptions = [...fakeOptions, realDate]
+                    .map(date => {
+                        // Create date without time (set to start of day)
+                        const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                        return {
+                            date: dateOnly,
+                            formatted: format(dateOnly, "MMMM d, yyyy"), // Remove time from format
+                            isCorrect: dateOnly.getTime() === new Date(realDate.getFullYear(), realDate.getMonth(), realDate.getDate()).getTime()
+                        };
+                    })
+                    .sort(() => Math.random() - 0.5);
 
+            console.log('allOptions:', allOptions); // Debug log
+            setDateOptions(allOptions);
+        } catch (error) {
+            console.error('Error generating date options:', error);
+        }
+    } else {
+        console.log('Missing creationDateTime:', {
+            hasTestData: !!testData,
+            hasCreationDateTime: !!testData?.schedule?.[scheduleId]?.creationDateTime,
+        });
+    }
+}, [testData]);
+
+const handleSubmit = (e) => {
+    e.preventDefault();
+    const selectedOption = dateOptions.find(opt => opt.formatted === selectedAnswer);
+    const correct = selectedOption?.isCorrect;
+    
+    // Convert the selected date to ISO format (date only, no time)
+    const selectedDateISO = selectedOption?.date?.toISOString().split('T')[0]; // This gives YYYY-MM-DD format
+    
+    submitAnswer.mutate({ 
+        selectedAnswer: selectedDateISO,
+        correct 
+    });
+};
 
     if (isLoading) {
         return (
@@ -146,105 +190,125 @@ function TakeTest() {
         );
     }
 
-    if (!questionData) {
+    if (!testData?.schedule?.[scheduleId]?.creationDateTime) {
         return (
             <Container>
-                <Alert severity="info">
-                    No more questions scheduled for now. Check the results page for your progress.
+                <Alert severity="warning">
+                    No test content available.
                 </Alert>
-                <Button
-                    variant="contained"
-                    onClick={handleViewResults}
-                    sx={{ mt: 2 }}
-                >
-                    View Results
-                </Button>
             </Container>
         );
     }
 
-    // First, add a function to check content type
+    // Check if content type is video
     const isVideo = (contentType) => {
-        // Check if the blob URL contains video mime type
         return contentType && contentType.startsWith('video/');
     };
 
+    const currentContent = testData?.schedule?.[scheduleId];
+    const currentImageUrl = imageUrls[currentContent.imageId];
 
     return (
-        <Container maxWidth="lg">
-            <Box sx={{ my: 4 }}>
+        <Container maxWidth="md">
+            <Box sx={{ mt: 4 }}>
                 <Typography variant="h4" gutterBottom>
-                    Memory Test
+                    When was this {testData.contentType} taken?
                 </Typography>
 
-                <Typography variant="subtitle1" gutterBottom>
-                    Schedule {questionData.scheduleIndex + 1} of {questionData.totalSchedules}
-                    {questionData.scheduleDate && (
-                        <span> - {format(new Date(questionData.scheduleDate), 'PPP')}</span>
-                    )}
-                </Typography>
+                {currentImageUrl ? (
+                    <Card sx={{ mb: 4 }}>
+                        {testData.contentType === 'picture' ? (
+                            <CardMedia
+                                component="img"
+                                src={currentImageUrl.url}
+                                alt="Test content"
+                                sx={{ 
+                                    maxHeight: '500px', 
+                                    width: '100%',
+                                    objectFit: 'contain' 
+                                }}
+                            />
+                        ) : (
+                            <CardMedia
+                                component="video"
+                                src={currentImageUrl.url}
+                                controls
+                                sx={{ 
+                                    maxHeight: '500px',
+                                    width: '100%'
+                                }}
+                            />
+                        )}
+                    </Card>
+                ) : (
+                    <Card sx={{ mb: 4, p: 4 }}>
+                        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                            <CircularProgress />
+                        </Box>
+                    </Card>
+                )}
 
                 {feedback && (
-                    <Alert
-                        severity={feedback.correct ? "success" : "error"}
-                        sx={{ mb: 2 }}
-                    >
+                    <Alert severity={feedback.correct ? "success" : "error"} sx={{ mb: 3 }}>
                         {feedback.message}
                     </Alert>
                 )}
 
-                <Typography variant="h6" gutterBottom>
-                    Select the image you saw during the learning phase:
-                </Typography>
-
-                <Grid container spacing={2} sx={{ my: 2 }}>
-                    {questionData.options.map((option, index) => (
-                        <Grid item xs={12} sm={6} key={index}>
-                            <Card
-                                sx={{
-                                    border: selectedAnswer === option.imageId ? '2px solid #1976d2' : 'none',
-                                    opacity: feedback && selectedAnswer !== option.imageId ? 0.7 : 1
-                                }}
-                            >
-                                <CardActionArea
-                                    onClick={() => !feedback && handleAnswerSelect(option.imageId)}
-                                    disabled={!!feedback}
+                {!feedback && (
+                    <>
+                        {dateOptions.length > 0 ? (
+                            <form onSubmit={handleSubmit}>
+                                <Typography variant="h6" gutterBottom>
+                                    Select the date when this {testData.contentType} was taken:
+                                </Typography>
+                                <RadioGroup
+                                    value={selectedAnswer || ''}
+                                    onChange={(e) => setSelectedAnswer(e.target.value)}
                                 >
-                                    <CardMedia
-                                        component={isVideo(imageUrls[option.imageId]?.contentType) ? "video" : "img"}
-                                        src={imageUrls[option.imageId]?.url}
-                                        alt={`Option ${index + 1}`}
-                                        controls={isVideo(imageUrls[option.imageId]?.contentType)}
-                                        onError={(e) => {
-                                            console.error('Media loading error:', {
-                                                error: e.target.error,
-                                                src: e.target.src,
-                                                contentType: imageUrls[option.imageId]?.contentType
-                                            });
-                                        }}
-                                        sx={{
-                                            height: 300,
-                                            objectFit: 'contain',
-                                            backgroundColor: 'black'
-                                        }}
-                                    />
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
+                                    {dateOptions.map((option, index) => (
+                                        <FormControlLabel
+                                            key={index}
+                                            value={option.formatted}
+                                            control={<Radio />}
+                                            label={option.formatted}
+                                        />
+                                    ))}
+                                </RadioGroup>
+
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    color="primary"
+                                    fullWidth
+                                    sx={{ mt: 3 }}
+                                    disabled={!selectedAnswer || submitAnswer.isLoading}
+                                >
+                                    {submitAnswer.isLoading ? 'Submitting...' : 'Submit Answer'}
+                                </Button>
+                            </form>
+                        ) : (
+                            <Alert severity="info">
+                                Loading date options...
+                                {testData?.schedule?.[scheduleId]?.creationDateTime && (
+                                    <pre style={{ marginTop: '10px', fontSize: '12px' }}>
+                                        Debug: {JSON.stringify(testData?.schedule?.[scheduleId]?.creationDateTime, null, 2)}
+                                    </pre>
+                                )}
+                            </Alert>
+                        )}
+                    </>
+                )}
 
                 {feedback && (
-                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                            <Button
-                                variant="contained"
-                                onClick={handleViewResults}
-                                size="large"
-                                color="success"
-                            >
-                                View Final Results
-                            </Button>
-                    </Box>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        sx={{ mt: 3 }}
+                        onClick={() => navigate('/')}
+                    >
+                        Return to Dashboard
+                    </Button>
                 )}
             </Box>
         </Container>

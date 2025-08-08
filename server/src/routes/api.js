@@ -10,7 +10,14 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const { Sequelize } = require('sequelize');
 const adminAuth = require("../middleware/adminAuth");
-
+const ExifReader = require('exif-reader'); // Add this package for image metadata
+const sharp = require('sharp');
+const ffmpeg = require('fluent-ffmpeg');
+const ffprobeStatic = require('ffprobe-static');
+const tmp = require('tmp');
+const fs = require('fs');
+const util = require('util');
+const writeFile = util.promisify(fs.writeFile);
 
 // Auth routes
 router.post('/auth/login', async (req, res) => {
@@ -55,10 +62,16 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
+
+
 // Test routes
 router.post('/test/create', auth, adminAuth,
     upload.array('content', 10), async (req, res) => {
   try {
+    const files = req.files;
+    const { contentType } = req.body;
+    const contentWithMetadata = [];
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
@@ -83,7 +96,7 @@ router.post('/test/create', auth, adminAuth,
       }
     });
 
-    const contentType = req.body.contentType;
+
     if (!['picture', 'video'].includes(contentType)) {
       return res.status(400).json({ error: 'Invalid content type. Must be either "picture" or "video"' });
     }
@@ -106,7 +119,63 @@ router.post('/test/create', auth, adminAuth,
       });
     }
     // Save images to database
-    const images = await Promise.all(req.files.map(async (file) => {
+    let images = await Promise.all(req.files.map(async (file) => {
+      let creationDateTime;
+      console.log(contentType);
+
+      if (contentType === 'picture') {
+        // Extract EXIF data for images
+        const buffer = file.buffer;
+        try {
+          const metadata = await sharp(buffer).metadata();
+          //console.log(metadata);
+          console.log(ExifReader)
+          const exifData = ExifReader(metadata.exif);
+          console.log(exifData);
+          creationDateTime = exifData.exif.DateTimeOriginal ||
+              file.lastModified;
+          //console.log(creationDateTime);
+        } catch (error) {
+          creationDateTime = new Date(file.lastModified);
+        }
+      } else if (contentType === 'video') {
+        try {
+          // Create a temporary file
+          const tmpobj = tmp.fileSync();
+
+          // Write the buffer to the temporary file
+          await writeFile(tmpobj.name, file.buffer);
+
+          // Get video metadata using ffprobe
+          const metadata = await new Promise((resolve, reject) => {
+            ffmpeg.setFfprobePath(ffprobeStatic.path);
+            ffmpeg.ffprobe(tmpobj.name, (err, metadata) => {
+              // Clean up the temporary file
+              tmpobj.removeCallback();
+
+              if (err) reject(err);
+              else resolve(metadata);
+            });
+          });
+
+          // Extract creation time from metadata
+          creationDateTime = metadata?.format?.tags?.creation_time ||
+              file.lastModified ||
+              new Date();
+
+          console.log('Video metadata:', {
+            format: metadata?.format,
+            duration: metadata?.format?.duration,
+            creationTime: creationDateTime
+          });
+
+        } catch (error) {
+          console.error('Error extracting video metadata:', error);
+          creationDateTime = file.lastModified || new Date();
+        }
+
+      }
+
       return await Image.create({
         filename: file.originalname,
         data: file.buffer,
@@ -114,38 +183,48 @@ router.post('/test/create', auth, adminAuth,
         UserId: req.user.userId,
         metadata: {
           size: file.size,
-          originalName: file.originalname
+          originalName: file.originalname,
+          creationDateTime: new Date(creationDateTime)
         }
       });
     }));
 
+    images = await Image.findAll({
+      where: {
+        UserId: userId
+      }
+    });
+
+    let randImageId = [
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length),
+      Math.floor(Math.random() * images.length)
+    ]
+
     // Calculate test schedule based on current time
     const now = new Date();
     const schedule = [
-      { date: new Date(now.getTime() + 60 * 1000), completed: false },    // 1 minute
-      { date: new Date(now.getTime() + 24 * 60 * 60 * 1000), completed: false },    // 24 hours
-      { date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), completed: false }, // 1 week
-      { date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), completed: false }, // 2 weeks
-      { date: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), completed: false }, // 1 month
-      { date: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000), completed: false }, // 2 months
-      { date: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000), completed: false }, // 3 months
-      { date: new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000), completed: false }, // 6 months
-      { date: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000), completed: false }  // 1 year
+      { id: 0, date: new Date(now.getTime() + 60 * 1000), completed: false, imageId: images[randImageId[0]].id, creationDateTime: images[randImageId[0]]?.metadata?.creationDateTime },    // 1 minute
+      { id: 1, date: new Date(now.getTime() + 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[1]].id, creationDateTime: images[randImageId[1]]?.metadata?.creationDateTime },    // 24 hours
+      { id: 2, date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[2]].id, creationDateTime: images[randImageId[2]]?.metadata?.creationDateTime }, // 1 week
+      { id: 3, date: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[3]].id, creationDateTime: images[randImageId[3]]?.metadata?.creationDateTime }, // 2 weeks
+      { id: 4, date: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[4]].id, creationDateTime: images[randImageId[4]]?.metadata?.creationDateTime }, // 1 month
+      { id: 5, date: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[5]].id, creationDateTime: images[randImageId[5]]?.metadata?.creationDateTime }, // 2 months
+      { id: 6, date: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[6]].id, creationDateTime: images[randImageId[6]]?.metadata?.creationDateTime }, // 3 months
+      { id: 7, date: new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[7]].id, creationDateTime: images[randImageId[7]]?.metadata?.creationDateTime }, // 6 months
+      { id: 8, date: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000), completed: false, imageId: images[randImageId[8]].id, creationDateTime: images[randImageId[8]]?.metadata?.creationDateTime }  // 1 year
     ];
-
-    // Create test content with image references
-    const content = images.map(image => ({
-      imageId: image.id,
-      originalContent: `/api/images/${image.id}`,
-      options: [], // Will be populated during test taking
-      correctAnswer: `/api/images/${image.id}`
-    }));
 
     // Create the test
     const test = await Test.create({
       UserId: req.user.userId,
       contentType,
-      content,
       schedule,
       status: 'active',
       difficulty: req.body.difficulty || 'normal',
@@ -317,7 +396,12 @@ router.delete('/test/:id', auth, adminAuth, async (req, res) => {
     }
 
     // Get all image IDs associated with this test
-    const imageIds = test.content.map(item => item.imageId);
+    images = await Image.findAll({
+      where: {
+        UserId: test.UserId
+      }
+    });
+    const imageIds = images.map(item => item.id);
 
     // Delete image records from database
     await Image.destroy({
@@ -351,71 +435,9 @@ router.get('/tests/all', auth, adminAuth, async (req, res) => {
   }
 });
 
-// Update the test question endpoint to use distractor images when available
-router.get('/test/:id/question', auth, async (req, res) => {
-  try {
-    const test = await Test.findByPk(req.params.id);
-    if (!test || test.UserId !== req.user.userId) {
-      return res.status(404).json({ error: 'Test not found' });
-    }
-
-    const currentSchedule = test.schedule.find(s => !s.completed);
-    if (!currentSchedule) {
-      return res.status(400).json({ error: 'Test already completed' });
-    }
-
-    const correctImage = test.content[0];
-
-    // First try to get distractor images
-    let distractors = await Image.findAll({
-      where: {
-        id: { [Sequelize.Op.ne]: correctImage.imageId },
-        contentType: { [Sequelize.Op.startsWith]: test.contentType === 'picture' ? 'image/' : 'video/' },
-        metadata: {
-          isDistractor: true
-        }
-      },
-      order: Sequelize.literal('RANDOM()'),
-      limit: 3
-    });
-
-    // If not enough distractors, fall back to regular images
-    if (distractors.length < 3) {
-      const additionalDistractors = await Image.findAll({
-        where: {
-          id: { [Sequelize.Op.ne]: correctImage.imageId },
-          contentType: { [Sequelize.Op.startsWith]: test.contentType === 'picture' ? 'image/' : 'video/' },
-          metadata: {
-            isDistractor: { [Sequelize.Op.or]: [false, null] }
-          }
-        },
-        order: Sequelize.literal('RANDOM()'),
-        limit: 3 - distractors.length
-      });
-      distractors = [...distractors, ...additionalDistractors];
-    }
-
-    const options = [
-      { imageId: correctImage.imageId },
-      ...distractors.map(d => ({ imageId: d.id }))
-    ].sort(() => Math.random() - 0.5);
-
-    res.json({
-      options,
-      scheduleDate: currentSchedule.date,
-      scheduleIndex: test.schedule.indexOf(currentSchedule),
-      totalSchedules: test.schedule.length
-    });
-
-  } catch (error) {
-    console.error('Error fetching question:', error);
-    res.status(500).json({ error: 'Failed to fetch question' });
-  }
-});
-
 
 // Submit answer
-router.post('/test/:id/answer', auth, async (req, res) => {
+router.post('/test/:id/schedule/:scheduleId/answer', auth, async (req, res) => {
   try {
     const { selectedAnswer } = req.body;
     const test = await Test.findByPk(req.params.id);
@@ -424,12 +446,12 @@ router.post('/test/:id/answer', auth, async (req, res) => {
       return res.status(404).json({ error: 'Test not found' });
     }
 
-    const currentSchedule = test.schedule.find(s => !s.completed);
+    const currentSchedule = test.schedule[req.params.scheduleId];
     if (!currentSchedule) {
       return res.status(400).json({ error: 'Test already completed' });
     }
 
-    const correct = test.content[0].imageId === selectedAnswer;
+    const correct = currentSchedule.creationDateTime === selectedAnswer;
 
     // Update the schedule with the answer
     const scheduleIndex = test.schedule.indexOf(currentSchedule);
@@ -467,8 +489,7 @@ router.post('/test/:id/answer', auth, async (req, res) => {
     res.json({
       correct,
       message: correct ? 'Correct answer!' : 'Incorrect answer',
-      correctImageId: test.content[0].imageId,
-      nextSchedule: test.schedule.find(s => !s.completed)?.date || null
+      correctImageId: test.schedule[req.params.scheduleId].imageId
     });
 
   } catch (error) {
@@ -517,130 +538,5 @@ router.get('/test/:id/results', auth, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch test results' });
   }
 });
-
-// Add distractor images (admin only)
-router.post('/distractors/add', auth, adminAuth, upload.array('distractors', 10), async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
-    }
-
-    if (req.files.length > 10) {
-      return res.status(400).json({ error: 'Maximum 10 files allowed' });
-    }
-
-    const contentType = req.body.contentType;
-    if (!['picture', 'video'].includes(contentType)) {
-      return res.status(400).json({ error: 'Invalid content type. Must be either "picture" or "video"' });
-    }
-
-    // Validate file types
-    const invalidFile = req.files.find(file => {
-      if (contentType === 'picture' && !file.mimetype.startsWith('image/')) {
-        return true;
-      }
-      if (contentType === 'video' && !file.mimetype.startsWith('video/')) {
-        return true;
-      }
-      return false;
-    });
-
-    if (invalidFile) {
-      return res.status(400).json({
-        error: `Invalid file type for ${invalidFile.originalname}. Must be ${contentType} file.`
-      });
-    }
-
-    // Save images to database with isDistractor flag
-    const distractors = await Promise.all(req.files.map(async (file) => {
-      return await Image.create({
-        filename: file.originalname,
-        data: file.buffer,
-        contentType: file.mimetype,
-        UserId: req.user.userId,
-        metadata: {
-          size: file.size,
-          originalName: file.originalname,
-          isDistractor: true, // Mark as distractor image
-          category: req.body.category || 'general' // Optional categorization
-        }
-      });
-    }));
-
-    res.status(201).json({
-      message: 'Distractor images added successfully',
-      count: distractors.length,
-      distractors: distractors.map(d => ({
-        id: d.id,
-        filename: d.filename,
-        contentType: d.contentType,
-        category: d.metadata.category
-      }))
-    });
-
-  } catch (error) {
-    console.error('Error adding distractor images:', error);
-    res.status(500).json({
-      error: 'Failed to add distractor images. Please try again.'
-    });
-  }
-});
-
-// Get all distractor images (admin only)
-router.get('/distractors', auth, adminAuth, async (req, res) => {
-  try {
-    const distractors = await Image.findAll({
-      where: {
-        metadata: {
-          isDistractor: true
-        }
-      },
-      attributes: ['id', 'filename', 'contentType', 'metadata', 'createdAt'],
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.json({
-      count: distractors.length,
-      distractors: distractors.map(d => ({
-        id: d.id,
-        filename: d.filename,
-        contentType: d.contentType,
-        category: d.metadata.category,
-        createdAt: d.createdAt
-      }))
-    });
-
-  } catch (error) {
-    console.error('Error fetching distractor images:', error);
-    res.status(500).json({ error: 'Failed to fetch distractor images' });
-  }
-});
-
-// Delete distractor image (admin only)
-router.delete('/distractors/:id', auth, adminAuth, async (req, res) => {
-  try {
-    const image = await Image.findOne({
-      where: {
-        id: req.params.id,
-        metadata: {
-          isDistractor: true
-        }
-      }
-    });
-
-    if (!image) {
-      return res.status(404).json({ error: 'Distractor image not found' });
-    }
-
-    await image.destroy();
-    res.json({ message: 'Distractor image deleted successfully' });
-
-  } catch (error) {
-    console.error('Error deleting distractor image:', error);
-    res.status(500).json({ error: 'Failed to delete distractor image' });
-  }
-});
-
-
 
 module.exports = router;
