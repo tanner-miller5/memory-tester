@@ -159,7 +159,8 @@ router.post('/test/create', auth, adminAuth,
           });
 
           // Extract creation time from metadata
-          creationDateTime = metadata?.format?.tags?.creation_time ||
+          creationDateTime = metadata?.format?.tags?.['com.apple.quicktime.creationdate'] ||
+              metadata?.format?.tags?.creation_time ||
               file.lastModified ||
               new Date();
 
