@@ -439,7 +439,7 @@ router.get('/tests/all', auth, adminAuth, async (req, res) => {
 // Submit answer
 router.post('/test/:id/schedule/:scheduleId/answer', auth, async (req, res) => {
   try {
-    const { selectedAnswer } = req.body;
+    const { selectedAnswer, correct } = req.body;
     const test = await Test.findByPk(req.params.id);
 
     if (!test || test.UserId !== req.user.userId) {
@@ -451,7 +451,7 @@ router.post('/test/:id/schedule/:scheduleId/answer', auth, async (req, res) => {
       return res.status(400).json({ error: 'Test already completed' });
     }
 
-    const correct = currentSchedule.creationDateTime === selectedAnswer;
+    //const correct = currentSchedule.creationDateTime === selectedAnswer;
 
     // Update the schedule with the answer
     const scheduleIndex = test.schedule.indexOf(currentSchedule);
