@@ -15,7 +15,7 @@ const Layout = ({ children }) => {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Memory Tester
+            Long-Term Memory Tester
           </Typography>
           {user ? (
             <>

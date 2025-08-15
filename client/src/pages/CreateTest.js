@@ -27,8 +27,10 @@ function CreateTest() {
     });
   },
       {
-        onSuccess: () => {
-          navigate('/upcoming-tests');
+        onSuccess: (response) => {
+          // Navigate to the study page with the newly created test ID
+          const testId = response.data.testId || response.data.id;
+          navigate(`/study-test/${testId}`);
         },
         onError: (error) => {
           console.error('Error creating test:', error);
@@ -101,9 +103,9 @@ function CreateTest() {
             color="primary"
             fullWidth
             sx={{ mt: 3 }}
-            disabled={files.length === 0}
+            disabled={files.length === 0 || createTest.isLoading}
           >
-            Create Test
+            {createTest.isLoading ? 'Creating Test...' : 'Create Test'}
           </Button>
         </form>
       </Box>

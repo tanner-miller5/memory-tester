@@ -13,6 +13,8 @@ import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
+import StudyTest from './components/StudyTest';
+
 
 // Add these imports at the top of App.js
 import Login from './pages/Login';
@@ -88,6 +90,8 @@ function App() {
                       </PrivateRoute>
                     }
                 />
+                <Route path="/study-test/:testId" element={<StudyTest />} />
+
               </Routes>
             </Layout>
           </BrowserRouter>

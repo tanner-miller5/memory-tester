@@ -129,7 +129,7 @@ const UpcomingTests = () => {
             <Card sx={{ p: 3, height: '100%' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <Typography variant="h6" gutterBottom>
-                  {testObj?.contentType} Test
+                  {testObj?.contentType.charAt(0).toUpperCase() + testObj?.contentType.slice(1)} Test
                 </Typography>
                 
                 <Chip 
