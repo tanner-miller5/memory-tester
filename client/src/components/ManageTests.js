@@ -28,9 +28,7 @@ const ManageTests = () => {
 
   // Redirect non-admin users
   React.useEffect(() => {
-    if (!isAdmin) {
-      navigate('/');
-    }
+
   }, [isAdmin, navigate]);
 
   const { data: tests, isLoading } = useQuery(

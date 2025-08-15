@@ -5,7 +5,7 @@ const NotificationService = require('./src/services/notifications');
 
 const PORT = process.env.PORT || 3001;
 
-// Connect to MongoDB
+// Connect to DB
 connectDB();
 
 // Initialize notification service

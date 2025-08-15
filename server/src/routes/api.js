@@ -65,7 +65,7 @@ router.post('/auth/login', async (req, res) => {
 
 
 // Test routes
-router.post('/test/create', auth, adminAuth,
+router.post('/test/create', auth,
     upload.array('content', 10), async (req, res) => {
   try {
     const files = req.files;

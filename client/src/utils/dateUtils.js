@@ -1,21 +1,28 @@
 // utils/dateUtils.js
 function generateFakeDates(realDate) {
     const realDateTime = new Date(realDate);
+    const now = new Date();
     
-    // Generate 3 fake dates within 365 days before and after the real date but not within 7 days
+    // Generate 3 fake dates that are all in the past
     const fakeDates = [];
     for (let i = 0; i < 3; i++) {
-        let daysOffset = Math.floor(Math.random() * 365) + 7;
-        if(Math.floor(Math.random() * 2) === 0) {
-            daysOffset *= -1;
-        }
-        const hoursOffset = Math.floor(Math.random() * 24) - 12; // -12 to +12 hours
-        const minutesOffset = Math.floor(Math.random() * 60) - 30; // -30 to +30 minutes
+        // Generate dates between 7 days and 365 days before the real date
+        const minDaysBack = 7;
+        const maxDaysBack = 365;
+        const daysOffset = Math.floor(Math.random() * (maxDaysBack - minDaysBack)) + minDaysBack;
+        
+        const hoursOffset = Math.floor(Math.random() * 24); // 0 to 24 hours back
+        const minutesOffset = Math.floor(Math.random() * 60); // 0 to 60 minutes back
         
         const fakeDate = new Date(realDateTime);
-        fakeDate.setDate(fakeDate.getDate() + daysOffset);
-        fakeDate.setHours(fakeDate.getHours() + hoursOffset);
-        fakeDate.setMinutes(fakeDate.getMinutes() + minutesOffset);
+        fakeDate.setDate(fakeDate.getDate() - daysOffset); // Always subtract to go back in time
+        fakeDate.setHours(fakeDate.getHours() - hoursOffset);
+        fakeDate.setMinutes(fakeDate.getMinutes() - minutesOffset);
+        
+        // Ensure the fake date is in the past
+        if (fakeDate > now) {
+            fakeDate.setTime(now.getTime() - (Math.random() * 365 * 24 * 60 * 60 * 1000)); // Random past date within last year
+        }
         
         fakeDates.push(fakeDate);
     }

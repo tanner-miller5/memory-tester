@@ -12,9 +12,7 @@ function CreateTest() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAdmin) {
-      navigate('/');
-    }
+
   }, [isAdmin, navigate]);
 
 
