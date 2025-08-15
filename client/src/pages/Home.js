@@ -19,6 +19,25 @@ const Home = () => {
 
 
       <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid item xs={12} md={4}>
+              <Card>
+                  <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                          View Create Test
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Create a new long term memory test
+                      </Typography>
+                      <Button
+                          variant="contained"
+                          color="secondary"
+                          onClick={() => navigate('/create-test')}
+                      >
+                          Create Test
+                      </Button>
+                  </CardContent>
+              </Card>
+          </Grid>
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
@@ -34,26 +53,6 @@ const Home = () => {
                 onClick={() => navigate('/upcoming-tests')}
               >
                 Upcoming Tests
-              </Button>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                View Create Test
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Create a new long term memory test
-              </Typography>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={() => navigate('/create-test')}
-              >
-                Create Test
               </Button>
             </CardContent>
           </Card>

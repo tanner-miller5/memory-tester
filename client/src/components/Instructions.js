@@ -22,7 +22,7 @@ function Instructions() {
     return (
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" gutterBottom color="primary">
-                How Memory Testing Works
+                How Long-Term Memory Testing Works
             </Typography>
             <Divider sx={{ mb: 2 }} />
             
@@ -33,7 +33,7 @@ function Instructions() {
                     </ListItemIcon>
                     <ListItemText 
                         primary="Learning Phase"
-                        secondary="You will be shown a series of images or videos that you need to memorize"
+                        secondary="You will be shown a series of images or videos that you uploaded and the date the the image or video was taken you need to memorize"
                     />
                 </ListItem>
 
@@ -53,7 +53,7 @@ function Instructions() {
                     </ListItemIcon>
                     <ListItemText 
                         primary="Recognition Test"
-                        secondary="Select the correct image from multiple options during each test"
+                        secondary="Select the correct date the image or video was taken from multiple options during each test"
                     />
                 </ListItem>
 
