@@ -389,7 +389,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.delete('/test/:id', auth, adminAuth, async (req, res) => {
+router.delete('/test/:id', auth, async (req, res) => {
   try {
     const test = await Test.findByPk(req.params.id);
     if (!test) {
@@ -422,12 +422,13 @@ router.delete('/test/:id', auth, adminAuth, async (req, res) => {
 });
 
 
-
-// Get all tests (admin only)
-router.get('/tests/all', auth, adminAuth, async (req, res) => {
+router.get('/tests/all', auth, async (req, res) => {
   try {
     const tests = await Test.findAll({
-      order: [['createdAt', 'DESC']]
+        where: {
+            UserId: req.user.id
+        },
+        order: [['createdAt', 'DESC']]
     });
     res.json(tests);
   } catch (error) {

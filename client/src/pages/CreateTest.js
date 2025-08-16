@@ -18,7 +18,7 @@ function CreateTest() {
 
   const createTest =  useMutation(
       (formData) => {
-    return axios.post('http://localhost:3001/api/test/create', formData, {
+    return axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/test/create`, formData, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },

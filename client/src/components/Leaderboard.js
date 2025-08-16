@@ -10,11 +10,11 @@ import {
   Typography, CircularProgress, Box
 } from '@mui/material';
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import api from "../utils/api";
 
 const Leaderboard = () => {
   const { data: leaderboard, isLoading} = useQuery('leaderboard', () =>
-    axios.get('http://localhost:3001/api/leaderboard').then(res => res.data)
+      api.get('/leaderboard').then(res => res.data)
   );
   if(isLoading) {
     return (

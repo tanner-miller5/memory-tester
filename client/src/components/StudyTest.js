@@ -27,7 +27,7 @@ function StudyTest() {
         ['test', testId],
         async () => {
             const response = await axios.get(
-                `http://localhost:3001/api/test/${testId}`,
+                `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/test/${testId}`,
                 {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 }
@@ -40,7 +40,7 @@ function StudyTest() {
     const loadAuthenticatedImage = async (imageId) => {
         try {
             const response = await axios.get(
-                `http://localhost:3001/api/images/${imageId}`,
+                `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/images/${imageId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem('token')}`

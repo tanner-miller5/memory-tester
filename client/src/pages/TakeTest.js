@@ -33,7 +33,7 @@ function TakeTest() {
         ['test', testId],
         async () => {
             const response = await axios.get(
-                `http://localhost:3001/api/test/${testId}`,
+                `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/test/${testId}`,
                 {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 }
@@ -46,7 +46,7 @@ function TakeTest() {
     const submitAnswer = useMutation(
         async (answerData) => {
             const response = await axios.post(
-                `http://localhost:3001/api/test/${testId}/schedule/${scheduleId}/answer`,
+                `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/test/${testId}/schedule/${scheduleId}/answer`,
                 answerData,
                 {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -68,7 +68,7 @@ function TakeTest() {
     const loadAuthenticatedImage = async (imageId) => {
         try {
             const response = await axios.get(
-                `http://localhost:3001/api/images/${imageId}`,
+                `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/images/${imageId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem('token')}`

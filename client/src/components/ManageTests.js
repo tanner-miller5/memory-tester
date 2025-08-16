@@ -33,7 +33,7 @@ const ManageTests = () => {
 
   const { data: tests, isLoading } = useQuery(
     'allTests',
-    () => axios.get('http://localhost:3001/api/tests/all', {
+    () => axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/tests/all`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -41,7 +41,7 @@ const ManageTests = () => {
   );
 
   const deleteTest = useMutation(
-    (testId) => axios.delete(`http://localhost:3001/api/test/${testId}`, {
+    (testId) => axios.delete(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/test/${testId}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -93,13 +93,6 @@ const ManageTests = () => {
               </Typography>
 
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => navigate(`/take-test/${test.id}`)}
-                >
-                  View
-                </Button>
                 <Button
                   variant="contained"
                   color="error"

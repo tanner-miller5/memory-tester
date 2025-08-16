@@ -16,7 +16,7 @@ import axios from 'axios';
 
 const Leaderboard = () => {
   const { data: leaderboardData, isLoading } = useQuery('leaderboard', () =>
-    axios.get('http://localhost:3001/api/leaderboard').then(res => res.data)
+      axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/leaderboard`).then(res => res.data)
   );
 
   if (isLoading) {

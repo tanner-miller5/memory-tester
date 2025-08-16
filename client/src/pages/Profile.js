@@ -5,11 +5,12 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {Navigate} from "react-router-dom";
 
+
 const Profile = () => {
   const { user } = useAuth();
   const { data: profile, isLoading, error } = useQuery(
       ['profile', user?.id], () =>
-    axios.get(`http://localhost:3001/api/users/${user.id}/profile`)
+    axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/users/${user.id}/profile`)
         .then(res => {
           console.log('Profile response:', res.data); // Debug log
           return res.data;

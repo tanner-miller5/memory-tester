@@ -9,7 +9,7 @@ const TestInterface = ({ testId }) => {
   const [score, setScore] = useState(0);
 
   const { data: test } = useQuery(['test', testId], () =>
-    axios.get(`http://localhost:3001/api/test/${testId}`, {
+    axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/test/${testId}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -17,7 +17,7 @@ const TestInterface = ({ testId }) => {
   );
 
   const submitAnswer = useMutation((answer) => 
-    axios.post(`http://localhost:3001/api/test/${testId}/answer`, {
+    axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/test/${testId}/answer`, {
       questionIndex: currentQuestion,
       answer
     })

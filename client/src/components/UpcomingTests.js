@@ -67,7 +67,7 @@ const UpcomingTests = () => {
 
   const { data: tests, isLoading, error } = useQuery(
     'upcomingTests',
-    () => axios.get('http://localhost:3001/api/tests/upcoming', {
+    () => axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/tests/upcoming`, {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

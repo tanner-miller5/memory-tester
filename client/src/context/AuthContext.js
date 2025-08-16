@@ -3,6 +3,8 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyToken = async (token) => {
     try {
-      const response = await axios.get('http://localhost:3001/api/auth/verify', {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/verify`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data.user);
@@ -29,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (credentials) => {
-    const response = await axios.post('http://localhost:3001/api/auth/login', credentials);
+    const response = await axios.post(`${API_BASE_URL}/api/auth/login`, credentials);
     const { token, user } = response.data;
     localStorage.setItem('token', token);
     setUser(user);
@@ -43,7 +45,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, login, logout,
-      loading,isAdmin: user?.isAdmin
+      loading, isAdmin: user?.isAdmin
     }}>
       {children}
     </AuthContext.Provider>
