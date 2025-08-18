@@ -13,7 +13,7 @@ RUN npm ci --only=production
 # Copy the rest of the application code
 COPY . .
 
-ARG REACT_APP_API_URL
+ARG REACT_APP_API_URL=https://memory-tester-server-4pffj.ondigitalocean.app
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 # Build the React app
