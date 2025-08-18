@@ -3,6 +3,12 @@ require('dotenv').config();
 
 const sequelize = new Sequelize(process.env.DATABASE_URL || 'postgres://postgres:password@localhost:5432/memory_tester', {
     dialect: 'postgres',
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    },
     logging: false,
     schema: 'public',
     define: {
